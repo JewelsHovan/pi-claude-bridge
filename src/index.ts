@@ -2520,7 +2520,15 @@ export default function (pi: ExtensionAPI) {
 		}, source);
 	}
 	pi.on("before_agent_start", (event) => {
-		lastSystemPromptOptions = event.systemPromptOptions;
+		// Forwarding hosts can add origin (not in upstream's event type). Only a
+		// subagent origin identifies a child; unrelated provenance may be an own turn.
+		// Still record every child, but don't reuse its options at parent boundaries.
+		const forwardedChild = "origin" in event
+			&& typeof event.origin === "object" && event.origin !== null
+			&& "kind" in event.origin && event.origin.kind === "subagent";
+		if (!forwardedChild) {
+			lastSystemPromptOptions = event.systemPromptOptions;
+		}
 		recordSystemPrompt("before_agent_start", event.systemPrompt, event.systemPromptOptions);
 	});
 	// The prompt the provider actually queries with is the fully-widened one: MCP tool
@@ -2535,7 +2543,10 @@ export default function (pi: ExtensionAPI) {
 	//
 	// agent_start also captures a handler-returned forceSystemPrompt, which
 	// buildSystemPrompt renders verbatim.
+	// Until this closure sees its own before hook, leave captures untouched at both
+	// boundaries: undefined options would create an empty capture or erase a valid one.
 	pi.on("agent_start", (_event, ctx) => {
+		if (!lastSystemPromptOptions) return;
 		recordSystemPrompt("agent_start", ctx.getSystemPrompt(), lastSystemPromptOptions);
 	});
 
@@ -2547,6 +2558,7 @@ export default function (pi: ExtensionAPI) {
 	// lag a mid-run tool-loadout change, which skews the hasRead skills filter until the
 	// next before_agent_start — accepted: a stale skills list beats failing the turn.
 	pi.on("turn_start", (_event, ctx) => {
+		if (!lastSystemPromptOptions) return;
 		recordSystemPrompt("turn_start", ctx.getSystemPrompt(), lastSystemPromptOptions);
 	});
 	pi.on("session_shutdown", (_event, ctx) => {

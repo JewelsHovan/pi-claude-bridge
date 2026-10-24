@@ -2,7 +2,7 @@
 
 ## UNRELEASED
 
-- **Fix: forwarded child hooks preserve parent prompt options** — `subagent`-origin hooks still capture the child's prompt without replacing the parent's portable instructions at later start/turn boundaries. Boundaries before an own-agent hook no longer create empty captures or overwrite valid captures.
+- **Fix: forwarded child hooks preserve parent prompt options** — `subagent`-origin hooks still capture the child's prompt without replacing the parent's portable instructions at later start/turn boundaries. Boundaries before an own-agent hook no longer create empty captures or overwrite valid captures. Offline regressions cover the real provider and session-mirror rebuild after compaction or tree navigation through a stubbed SDK-query boundary.
 - **Fix: abort ignored after a terminated tool batch (#200, issue #199)** — when a run ended with Claude Code's query parked at a tool call (`terminate: true`), aborting the next run did nothing. Each run that continues the query now binds its own signal. Thanks @orshih6 and @cootue.
 
 ## 0.9.3 — 2026-10-13
